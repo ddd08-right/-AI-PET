@@ -7,14 +7,14 @@ build/
 dist/
 
 # Patient/private data and generated outputs
-data/
-datasets/
-raw/
-images/
-predictions/
-checkpoints/
-weights/
-logs/
+/data/
+/datasets/
+/raw/
+/images/
+/predictions/
+/checkpoints/
+/weights/
+/logs/
 *.dcm
 *.nii
 *.nii.gz
