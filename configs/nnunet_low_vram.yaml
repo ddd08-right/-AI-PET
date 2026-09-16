@@ -1,0 +1,21 @@
+status: HISTORICAL_PROJECT_RECORD
+source_evidence:
+  - docs/PREFLIGHT_REPORT.md
+  - canonical_project:00_docs/DATASET202_7G_REAL_VRAM_PROBE.md
+description: Observed low-VRAM probe configuration gated as TOO_CLOSE for longer training. Not claimed optimal.
+hardware_record:
+  gpu: NVIDIA GeForce RTX 4060 Laptop GPU
+  vram_total_mib: 8188
+target_spacing: [3.0, 2.0364201068878174, 2.0364201068878174]
+patch_size: [176, 112, 112]
+batch_size: 2
+resource_controls:
+  nnUNet_n_proc_DA: 1
+  OMP_NUM_THREADS: 1
+  MKL_NUM_THREADS: 1
+  OPENBLAS_NUM_THREADS: 1
+gate:
+  status: TOO_CLOSE
+  peak_vram_mib: 7828
+  peak_vram_percent: 95.6
+  max_temperature_c: 86

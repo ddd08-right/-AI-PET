@@ -1,0 +1,13 @@
+status: HISTORICAL_PROJECT_RECORD
+source_evidence:
+  - docs/PREFLIGHT_REPORT.md
+  - canonical_project:04_qc/DATASET202_PREPROCESSING_GATE.md
+description: Observed Dataset202 3d_fullres engineering configuration. Not claimed optimal.
+target_spacing: [3.0, 2.0364201068878174, 2.0364201068878174]
+patch_size: [192, 112, 112]
+batch_size: 2
+resource_controls:
+  nnUNet_n_proc_DA: 1
+  OMP_NUM_THREADS: 1
+  MKL_NUM_THREADS: 1
+  OPENBLAS_NUM_THREADS: 1

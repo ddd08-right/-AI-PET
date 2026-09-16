@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "required": [
+    "run_id",
+    "timestamp",
+    "git_commit",
+    "dataset_manifest_sha256",
+    "split_manifest_sha256",
+    "config_sha256",
+    "python_version",
+    "platform",
+    "gpu_name",
+    "seed",
+    "command",
+    "exit_status",
+    "checkpoint_sha256",
+    "notes"
+  ],
+  "properties": {
+    "run_id": {"type": "string"},
+    "timestamp": {"type": "string"},
+    "git_commit": {"type": ["string", "null"]},
+    "dataset_manifest_sha256": {"type": ["string", "null"]},
+    "split_manifest_sha256": {"type": ["string", "null"]},
+    "config_sha256": {"type": ["string", "null"]},
+    "python_version": {"type": "string"},
+    "platform": {"type": "string"},
+    "gpu_name": {"type": ["string", "null"]},
+    "seed": {"type": ["integer", "null"]},
+    "command": {"type": "array", "items": {"type": "string"}},
+    "exit_status": {"type": ["integer", "null"]},
+    "checkpoint_sha256": {"type": ["string", "null"]},
+    "notes": {"type": ["string", "null"]}
+  }
+}

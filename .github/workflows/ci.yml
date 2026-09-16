@@ -1,0 +1,25 @@
+
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  synthetic-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install package and test tools
+        run: python -m pip install -e ".[test]"
+      - name: Ruff
+        run: python -m ruff check .
+      - name: Pytest
+        run: python -m pytest -q
+      - name: Public repository guardrail
+        run: python scripts/verify_public_repo.py
+      - name: Synthetic demo
+        run: python scripts/demo_pipeline.py
