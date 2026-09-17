@@ -23,8 +23,30 @@ jobs:
       - name: Ruff
         run: python -m ruff check .
       - name: Pytest
-        run: python -m pytest -q
+        run: python -m pytest -q -m "not pytorch"
       - name: Public repository guardrail
         run: python scripts/verify_public_repo.py
       - name: Synthetic demo
         run: python scripts/demo_pipeline.py
+
+  pytorch-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Show Python version
+        run: python --version
+      - name: Install CPU PyTorch
+        run: python -m pip install torch==2.14.0 --index-url https://download.pytorch.org/whl/cpu
+      - name: Install package and test tools
+        run: python -m pip install -e ".[test]"
+      - name: Show PyTorch version
+        run: python -c "import torch; print(torch.__version__)"
+      - name: Ruff
+        run: python -m ruff check .
+      - name: PyTorch unit tests
+        run: python -m pytest -q -m pytorch
+      - name: PyTorch synthetic demo
+        run: python scripts/demo_pytorch_train.py --device cpu
