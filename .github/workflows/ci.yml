@@ -23,7 +23,7 @@ jobs:
       - name: Ruff
         run: python -m ruff check .
       - name: Pytest
-        run: python -m pytest -q
+        run: python -m pytest -q -m "not pytorch"
       - name: Public repository guardrail
         run: python scripts/verify_public_repo.py
       - name: Synthetic demo
@@ -47,11 +47,6 @@ jobs:
       - name: Ruff
         run: python -m ruff check .
       - name: PyTorch unit tests
-        run: >
-          python -m pytest -q
-          tests/test_unet3d.py
-          tests/test_pytorch_loss.py
-          tests/test_pytorch_training.py
-          tests/test_synthetic_petct_dataset.py
+        run: python -m pytest -q -m pytorch
       - name: PyTorch synthetic demo
         run: python scripts/demo_pytorch_train.py --device cpu

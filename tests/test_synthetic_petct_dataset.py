@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-import torch
+import pytest
 
-from pet_ai.datasets.synthetic_petct import SyntheticPETCTDataset
+torch = pytest.importorskip("torch")
+
+pytestmark = pytest.mark.pytorch
+
+from pet_ai.datasets.synthetic_petct import SyntheticPETCTDataset  # noqa: E402
 
 
 def test_synthetic_petct_dataset_returns_expected_shapes_and_dtypes() -> None:

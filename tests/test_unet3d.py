@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-import torch
+import pytest
 
-from pet_ai.models.unet3d import SmallUNet3D
+torch = pytest.importorskip("torch")
+
+pytestmark = pytest.mark.pytorch
+
+from pet_ai.models.unet3d import SmallUNet3D  # noqa: E402
 
 
 def test_small_unet3d_output_shape_matches_input_spatial_shape() -> None:

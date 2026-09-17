@@ -1,12 +1,17 @@
 from __future__ import annotations
 
-import torch
-from torch.utils.data import DataLoader
+import pytest
 
-from pet_ai.datasets.synthetic_petct import SyntheticPETCTDataset
-from pet_ai.losses.segmentation import bce_dice_loss
-from pet_ai.models.unet3d import SmallUNet3D
-from pet_ai.training.engine import train_step
+torch = pytest.importorskip("torch")
+
+pytestmark = pytest.mark.pytorch
+
+from torch.utils.data import DataLoader  # noqa: E402
+
+from pet_ai.datasets.synthetic_petct import SyntheticPETCTDataset  # noqa: E402
+from pet_ai.losses.segmentation import bce_dice_loss  # noqa: E402
+from pet_ai.models.unet3d import SmallUNet3D  # noqa: E402
+from pet_ai.training.engine import train_step  # noqa: E402
 
 
 def test_backward_populates_finite_gradients() -> None:

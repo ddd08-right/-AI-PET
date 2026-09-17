@@ -1,8 +1,15 @@
 from __future__ import annotations
 
-import torch
+import pytest
 
-from pet_ai.losses.segmentation import bce_dice_loss, soft_dice_loss_from_logits
+torch = pytest.importorskip("torch")
+
+pytestmark = pytest.mark.pytorch
+
+from pet_ai.losses.segmentation import (  # noqa: E402
+    bce_dice_loss,
+    soft_dice_loss_from_logits,
+)
 
 
 def test_soft_dice_loss_from_logits_is_finite() -> None:
