@@ -54,6 +54,26 @@ python scripts/demo_pipeline.py
 
 The demo creates temporary synthetic PET, CT, ground-truth mask, and prediction mask files; validates a public-safe manifest; checks splits, geometry, labels, voxel metrics, lesion metrics, and run provenance; then removes temporary imaging files automatically.
 
+## Native PyTorch 3D Baseline
+
+The repository includes a small native PyTorch 3D segmentation baseline for engineering education:
+
+- native `torch.utils.data.Dataset` with synthetic PET/CT tensors
+- small 3D U-Net using `Conv3d`, pooling, transposed convolution, and skip connections
+- BCE-with-logits plus soft Dice segmentation loss
+- explicit training loop with `loss.backward()` and `optimizer.step()`
+- unit tests for backward gradients and optimizer parameter updates
+- CPU synthetic demonstration in `scripts/demo_pytorch_train.py`
+
+Evidence boundary: this is a synthetic engineering demonstration only. It is not a clinical model, not a performance benchmark, and makes no clinical performance claims.
+
+Install the pinned public PyTorch dependency and test tools, then run the CPU demo:
+
+```powershell
+python -m pip install -e ".[test,pytorch]"
+python scripts/demo_pytorch_train.py --device cpu
+```
+
 ## 6. Data and patient-level split validation
 
 `pet_ai.data.manifest` validates required public-safe fields and rejects obvious patient/private fields. `pet_ai.data.split_validation` checks that the same `patient_key` does not appear across train, validation, and test splits.
