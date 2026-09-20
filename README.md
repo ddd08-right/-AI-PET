@@ -1,11 +1,11 @@
 
 # PET/CT Segmentation, Quantification, and Reliability Engineering
 
-![CI](https://github.com/ddd08-right/-AI-PET/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/ddd08-right/PET-AI-Engineering/actions/workflows/ci.yml/badge.svg)
 
-A public-safe engineering path from PET/CT quality control and patient-level
-splits through native PyTorch 3D segmentation, physical quantification,
-patient-level reliability, and risk--coverage selective review.
+A public-safe engineering path from PET/CT medical imaging and native PyTorch
+3D segmentation through physical quantification, patient-level quantitative
+error, reliability ranking, and risk--coverage selective review.
 
 ```mermaid
 flowchart LR
@@ -17,6 +17,22 @@ flowchart LR
     F --> G[Risk-coverage / selective review]
     G --> H[Reproducibility / testing]
 ```
+
+## Why this repository exists
+
+This engineering / methodology repository explores how PET/CT segmentation
+outputs can connect to physical quantitative endpoints and patient-level
+reliability evaluation, rather than treating segmentation overlap as the only
+endpoint. It is not a clinical validation study.
+
+## Core technical evidence
+
+- Native PyTorch 3D segmentation: dataset -> 3D U-Net -> loss -> backward pass -> optimizer update.
+- Patient-level split checks and PET/CT geometry and segmentation-label QC.
+- Physical binary-mask volume calculation from voxel spacing in millimetres.
+- Patient-level quantitative-error and reliability utilities with explicit edge-case policies.
+- Risk--coverage evaluation with fixed-seed random, non-deployable best-case reference, and reverse controls.
+- Automated tests, CI workflows, a public-repository guardrail, provenance utilities, and synthetic demos.
 
 This repository is intentionally modest: it demonstrates public-safe software engineering patterns for PET/CT AI work using synthetic tests and explicit evidence labels. It does not claim that AutoPET, nnU-Net, Blackbean, or TCIA_processing were created here.
 
