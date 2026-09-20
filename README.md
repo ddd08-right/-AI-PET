@@ -1,11 +1,22 @@
 
-# PET/CT AI Reproducibility Engineering
+# PET/CT Segmentation, Quantification, and Reliability Engineering
 
 ![CI](https://github.com/ddd08-right/-AI-PET/actions/workflows/ci.yml/badge.svg)
 
-A reproducible PET/CT AI engineering project for data quality control,
-segmentation evaluation, experiment provenance, failure analysis,
-and quantitative reliability research.
+A public-safe engineering path from PET/CT quality control and patient-level
+splits through native PyTorch 3D segmentation, physical quantification,
+patient-level reliability, and risk--coverage selective review.
+
+```mermaid
+flowchart LR
+    A[PET/CT] --> B[QC / patient-level split]
+    B --> C[Native PyTorch 3D segmentation]
+    C --> D[Physical quantification]
+    D --> E[Patient-level quantitative error]
+    E --> F[Reliability ranking]
+    F --> G[Risk-coverage / selective review]
+    G --> H[Reproducibility / testing]
+```
 
 This repository is intentionally modest: it demonstrates public-safe software engineering patterns for PET/CT AI work using synthetic tests and explicit evidence labels. It does not claim that AutoPET, nnU-Net, Blackbean, or TCIA_processing were created here.
 
@@ -27,13 +38,15 @@ This repository is intentionally modest: it demonstrates public-safe software en
 | Voxel-level metrics | ENGINEERING_SMOKE | Analytic arrays and synthetic masks. |
 | Lesion-level metrics | ENGINEERING_SMOKE | Connected-component tests with synthetic masks. |
 | Run provenance helpers | ENGINEERING_SMOKE | Synthetic file hashes and JSON manifests. |
+| Physical mask and generic uptake quantification | ENGINEERING_SMOKE | NumPy invariant tests and synthetic methodology demo. |
+| Patient-level reliability and risk--coverage | ENGINEERING_SMOKE | Deterministic NumPy tests, controls, and synthetic methodology demo. |
 | nnU-Net orchestration wrappers | DEVELOPMENT_EXPOSED | Parameterized wrappers; not run by CI. |
 | WinError 1455 and low-VRAM notes | HISTORICAL_PROJECT_RECORD | Historical local records only; not rerun here. |
 | Clinical validation | PLANNED | No clinical validation is claimed. |
 
 ## 3. Architecture / pipeline
 
-Manifest -> split validation -> PET/CT geometry QC -> segmentation label QC -> voxel evaluation -> lesion evaluation -> run provenance -> failure analysis.
+Manifest -> split validation -> PET/CT geometry QC -> segmentation label QC -> 3D segmentation -> physical quantification -> patient-level reliability -> risk--coverage -> run provenance and failure analysis.
 
 Each stage has a small module under `src/pet_ai/` and a corresponding test or demo call. The scripts in `scripts/` are thin command-line entry points.
 
@@ -108,7 +121,7 @@ The QC modules report problems. They do not silently resample, repair, or exclud
 
 ## 13. Research extensions - PLANNED ONLY
 
-The following remain PLANNED unless future evidence is added: multi-center OOD, multi-tracer OOD, FDG -> PSMA transfer, SUV error, tumor volume/TLV error, patient-level risk ranking, selective review, risk-coverage curve, and AURC.
+The following remain PLANNED unless future evidence is added: multi-center OOD, multi-tracer OOD, FDG -> PSMA transfer, validated SUV error, and study-defined tumor-volume biomarkers. The v0.3 reliability utilities are synthetic engineering evidence, not clinical evidence.
 
 ## 14. Evidence boundaries
 
