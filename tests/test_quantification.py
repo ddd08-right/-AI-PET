@@ -31,6 +31,25 @@ def test_empty_mask_has_zero_volume():
     assert mask_volume_ml(np.zeros((2, 2, 2)), [1, 1, 1]) == 0.0
 
 
+@pytest.mark.parametrize("value", [0.01, 0.5, -1, 2, np.nan])
+def test_ambiguous_non_binary_mask_is_rejected(value):
+    mask = np.zeros((2, 2, 2), dtype=float)
+    mask[0, 0, 0] = value
+
+    with pytest.raises(ValueError, match="binary values 0 and 1"):
+        mask_volume_ml(mask, [1, 1, 1])
+    with pytest.raises(ValueError, match="binary values 0 and 1"):
+        masked_mean(np.ones_like(mask), mask)
+
+
+def test_boolean_mask_is_accepted():
+    mask = np.zeros((2, 2, 2), dtype=bool)
+    mask[0, 0, 0] = True
+
+    assert mask_volume_ml(mask, [1, 1, 1]) == 0.001
+    assert masked_mean(np.ones_like(mask, dtype=float), mask) == 1.0
+
+
 @pytest.mark.parametrize(
     "spacing",
     ([1, 1], [1, 1, 1, 1], [0, 1, 1], [-1, 1, 1], [np.nan, 1, 1], [np.inf, 1, 1]),

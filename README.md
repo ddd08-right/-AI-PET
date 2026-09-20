@@ -12,8 +12,10 @@ flowchart LR
     A[PET/CT] --> B[QC / patient-level split]
     B --> C[Native PyTorch 3D segmentation]
     C --> D[Physical quantification]
-    D --> E[Patient-level reliability]
-    E --> F[Risk-coverage / selective review]
+    D --> E[Patient-level quantitative error]
+    E --> F[Reliability ranking]
+    F --> G[Risk-coverage / selective review]
+    G --> H[Reproducibility / testing]
 ```
 
 This repository is intentionally modest: it demonstrates public-safe software engineering patterns for PET/CT AI work using synthetic tests and explicit evidence labels. It does not claim that AutoPET, nnU-Net, Blackbean, or TCIA_processing were created here.

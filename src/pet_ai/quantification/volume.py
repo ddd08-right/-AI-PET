@@ -18,6 +18,16 @@ def _validated_spacing(spacing_mm: Sequence[float]) -> np.ndarray:
     return spacing
 
 
+def _validated_binary_mask(mask: np.ndarray) -> np.ndarray:
+    """Return a 3D boolean mask after rejecting ambiguous non-binary values."""
+    array = np.asarray(mask)
+    if array.ndim != 3:
+        raise ValueError("mask must be a 3D array")
+    if not np.all((array == 0) | (array == 1)):
+        raise ValueError("mask must be boolean or contain only binary values 0 and 1")
+    return array.astype(bool, copy=False)
+
+
 def voxel_volume_ml(spacing_mm: Sequence[float]) -> float:
     """Return one voxel's volume in mL for D/H/W spacing given in millimetres."""
     spacing = _validated_spacing(spacing_mm)
@@ -25,8 +35,6 @@ def voxel_volume_ml(spacing_mm: Sequence[float]) -> float:
 
 
 def mask_volume_ml(mask: np.ndarray, spacing_mm: Sequence[float]) -> float:
-    """Return generic non-zero mask volume in mL; an empty mask has volume 0.0 mL."""
-    array = np.asarray(mask)
-    if array.ndim != 3:
-        raise ValueError("mask must be a 3D array")
+    """Return generic binary-mask volume in mL; an empty mask has volume 0.0 mL."""
+    array = _validated_binary_mask(mask)
     return float(np.count_nonzero(array) * voxel_volume_ml(spacing_mm))

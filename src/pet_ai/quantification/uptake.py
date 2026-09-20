@@ -11,19 +11,19 @@ from collections.abc import Sequence
 
 import numpy as np
 
-from pet_ai.quantification.volume import mask_volume_ml
+from pet_ai.quantification.volume import _validated_binary_mask, mask_volume_ml
 
 
 def _masked_values(image: np.ndarray, mask: np.ndarray) -> np.ndarray:
     image_array = np.asarray(image)
-    mask_array = np.asarray(mask)
-    if image_array.ndim != 3 or mask_array.ndim != 3:
+    if image_array.ndim != 3:
         raise ValueError("image and mask must both be 3D arrays")
+    mask_array = _validated_binary_mask(mask)
     if image_array.shape != mask_array.shape:
         raise ValueError(
             f"image and mask shapes differ: {image_array.shape} != {mask_array.shape}"
         )
-    values = image_array[mask_array != 0]
+    values = image_array[mask_array]
     if values.size == 0:
         raise ValueError("masked statistic is undefined for an empty mask")
     if not np.all(np.isfinite(values)):
@@ -32,7 +32,7 @@ def _masked_values(image: np.ndarray, mask: np.ndarray) -> np.ndarray:
 
 
 def masked_mean(image: np.ndarray, mask: np.ndarray) -> float:
-    """Return the mean finite image value in the non-zero mask.
+    """Return the mean finite image value in the binary mask.
 
     Raises ValueError when the mask is empty.
     """
@@ -40,7 +40,7 @@ def masked_mean(image: np.ndarray, mask: np.ndarray) -> float:
 
 
 def masked_max(image: np.ndarray, mask: np.ndarray) -> float:
-    """Return the maximum finite image value in the non-zero mask.
+    """Return the maximum finite image value in the binary mask.
 
     Raises ValueError when the mask is empty.
     """
