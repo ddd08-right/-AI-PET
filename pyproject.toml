@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pet-ai-reproducibility"
-version = "0.1.0"
-description = "Synthetic-testable PET/CT AI reproducibility utilities for manifest QC, split leakage checks, segmentation metrics, and run provenance."
+version = "0.3.1"
+description = "Reproducible PET/CT AI engineering utilities for segmentation, quantitative reliability, risk-coverage evaluation, quality control, and provenance."
 requires-python = ">=3.10"
 dependencies = [
   "numpy>=1.23",
