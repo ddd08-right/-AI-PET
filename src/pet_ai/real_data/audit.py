@@ -37,14 +37,12 @@ def _missing_reasons(paths: dict[str, Path]) -> list[str]:
     return [f"missing {role} file" for role, path in paths.items() if not path.is_file()]
 
 
-def _load_finite(path: Path, role: str) -> tuple[nib.spatialimages.SpatialImage, np.ndarray]:
+def _load_image(path: Path, role: str) -> tuple[nib.spatialimages.SpatialImage, np.ndarray]:
     try:
         image = nib.load(str(path))
         data = np.asanyarray(image.dataobj)
     except (OSError, ValueError, nib.filebasedimages.ImageFileError) as error:
         raise ValueError(f"unreadable {role} file: {type(error).__name__}") from error
-    if not np.all(np.isfinite(data)):
-        raise ValueError(f"{role} contains NaN or Inf")
     return image, data
 
 
@@ -68,11 +66,15 @@ def audit_examination(
     loaded: dict[str, tuple[nib.spatialimages.SpatialImage, np.ndarray]] = {}
     for role, path in paths.items():
         try:
-            loaded[role] = _load_finite(path, role)
+            loaded[role] = _load_image(path, role)
         except ValueError as error:
             failures.append(str(error))
     if failures:
         return ExaminationAudit(False, False, None, None, None, None, None, None, None, failures)
+
+    for role, (_, data) in loaded.items():
+        if not np.all(np.isfinite(data)):
+            failures.append(f"{role} contains NaN or Inf")
 
     ct_geometry = load_nifti_geometry(paths["CT"])
     if len(ct_geometry.shape) != 3:
@@ -80,9 +82,14 @@ def audit_examination(
     if len(ct_geometry.spacing) != 3:
         failures.append(f"CT spacing must have three values; observed={ct_geometry.spacing}")
 
-    for role in ("PET", "reference segmentation"):
-        comparison = compare_nifti_geometry(paths["CT"], paths[role], atol=geometry_atol)
-        failures.extend(f"{role} geometry: {message}" for message in comparison.messages)
+    pet_geometry = compare_nifti_geometry(paths["CT"], paths["PET"], atol=geometry_atol)
+    failures.extend(f"PET geometry: {message}" for message in pet_geometry.messages)
+    reference_geometry = compare_nifti_geometry(
+        paths["CT"], paths["reference segmentation"], atol=geometry_atol
+    )
+    failures.extend(
+        f"reference segmentation geometry: {message}" for message in reference_geometry.messages
+    )
 
     label_result = validate_segmentation_labels(
         paths["reference segmentation"],
@@ -95,11 +102,13 @@ def audit_examination(
     spacing: tuple[float, ...] | None = None
     per_voxel_ml: float | None = None
     reference_volume: float | None = None
+    ct_geometry_valid_for_volume = len(ct_geometry.shape) == 3 and len(ct_geometry.spacing) == 3
     if len(ct_geometry.spacing) == 3:
         spacing = ct_geometry.spacing
+    if ct_geometry_valid_for_volume:
         try:
             per_voxel_ml = voxel_volume_ml(spacing)
-            if label_result.ok:
+            if label_result.ok and reference_geometry.ok:
                 reference_volume = mask_volume_ml(
                     loaded["reference segmentation"][1], spacing
                 )
@@ -114,7 +123,7 @@ def audit_examination(
         voxel_volume_ml=per_voxel_ml,
         reference_foreground_voxels=label_result.nonzero_voxels,
         reference_volume_ml=reference_volume,
-        reference_empty=label_result.nonzero_voxels == 0,
+        reference_empty=(label_result.nonzero_voxels == 0) if label_result.ok else None,
         reference_labels=label_result.unique_labels,
         failure_reasons=failures,
     )

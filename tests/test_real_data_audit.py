@@ -52,6 +52,19 @@ def test_valid_aligned_triplet_and_physical_volume(tmp_path: Path) -> None:
     assert result.reference_empty is False
 
 
+def test_reference_geometry_mismatch_has_no_physical_volume(tmp_path: Path) -> None:
+    segmentation = np.zeros((3, 4, 5), dtype=np.uint8)
+    segmentation[0, 0, :2] = 1
+    segmentation_affine = np.diag([2.0, 2.5, 5.0, 1.0])
+    result = audit_examination(
+        *_triplet(tmp_path, segmentation=segmentation, segmentation_affine=segmentation_affine)
+    )
+
+    assert not result.ok
+    assert result.reference_volume_ml is None
+    assert result.reference_empty is False
+
+
 def test_geometry_mismatch_is_rejected_without_resampling(tmp_path: Path) -> None:
     pet_affine = np.diag([2.0, 2.5, 5.0, 1.0])
     ct_path, pet_path, seg_path = _triplet(tmp_path, pet_affine=pet_affine)
@@ -71,6 +84,7 @@ def test_nonbinary_reference_is_rejected(tmp_path: Path) -> None:
 
     assert not result.ok
     assert result.reference_volume_ml is None
+    assert result.reference_empty is None
     assert any("not binary" in reason for reason in result.failure_reasons)
 
 
@@ -92,7 +106,7 @@ def test_nonfinite_values_are_rejected(tmp_path: Path, role: str) -> None:
     )
 
     assert not result.ok
-    assert not result.readable
+    assert result.readable
     assert any("NaN or Inf" in reason for reason in result.failure_reasons)
 
 
@@ -103,3 +117,25 @@ def test_empty_binary_reference_is_valid(tmp_path: Path) -> None:
     assert result.reference_empty is True
     assert result.reference_foreground_voxels == 0
     assert result.reference_volume_ml == 0.0
+
+
+def test_missing_file_is_not_readable(tmp_path: Path) -> None:
+    ct_path, pet_path, seg_path = _triplet(tmp_path)
+    seg_path.unlink()
+
+    result = audit_examination(ct_path, pet_path, seg_path)
+
+    assert not result.readable
+    assert not result.ok
+    assert any("missing reference segmentation file" in reason for reason in result.failure_reasons)
+
+
+def test_unreadable_file_is_not_readable(tmp_path: Path) -> None:
+    ct_path, pet_path, seg_path = _triplet(tmp_path)
+    pet_path.write_bytes(b"not a NIfTI image")
+
+    result = audit_examination(ct_path, pet_path, seg_path)
+
+    assert not result.readable
+    assert not result.ok
+    assert any("unreadable PET file" in reason for reason in result.failure_reasons)
