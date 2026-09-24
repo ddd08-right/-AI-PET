@@ -67,6 +67,20 @@ def git_tracked_files(repo_root: Path) -> list[Path] | None:
     return files or None
 
 
+def git_untracked_files(repo_root: Path) -> list[Path] | None:
+    try:
+        completed = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return [repo_root / line for line in completed.stdout.splitlines() if line]
+
+
 def filesystem_files(repo_root: Path) -> list[Path]:
     files: list[Path] = []
     for path in repo_root.rglob("*"):
@@ -78,8 +92,21 @@ def filesystem_files(repo_root: Path) -> list[Path]:
     return files
 
 
-def candidate_files(repo_root: Path) -> list[Path]:
-    return git_tracked_files(repo_root) or filesystem_files(repo_root)
+def candidate_files(repo_root: Path, explicit_paths: list[Path] | None = None) -> list[Path]:
+    tracked = git_tracked_files(repo_root)
+    if tracked is None:
+        candidates = filesystem_files(repo_root)
+    else:
+        untracked = git_untracked_files(repo_root)
+        candidates = tracked if untracked is None else tracked + untracked
+    for path in explicit_paths or []:
+        resolved = path if path.is_absolute() else repo_root / path
+        try:
+            resolved.resolve().relative_to(repo_root)
+        except ValueError as error:
+            raise ValueError(f"explicit scan path is outside repository: {path}") from error
+        candidates.append(resolved)
+    return sorted(set(candidates))
 
 
 def is_blocked_artifact(path: Path) -> bool:
@@ -113,11 +140,23 @@ def main() -> int:
         description="Guardrail scan for public repository content. This is not a formal PHI detector."
     )
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
+    parser.add_argument(
+        "--include",
+        action="append",
+        default=[],
+        type=Path,
+        help="Also scan an explicit delivery file, including a normally ignored file.",
+    )
     args = parser.parse_args()
 
     repo_root = args.repo_root.resolve()
     errors: list[str] = []
-    for path in candidate_files(repo_root):
+    try:
+        candidates = candidate_files(repo_root, args.include)
+    except ValueError as error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        return 2
+    for path in candidates:
         if not path.exists():
             continue
         rel = path.relative_to(repo_root)

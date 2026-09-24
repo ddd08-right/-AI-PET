@@ -33,6 +33,7 @@ def test_run_manifest_contains_required_provenance_fields(tmp_path):
         "run_id",
         "timestamp",
         "git_commit",
+        "git_dirty",
         "dataset_manifest_sha256",
         "split_manifest_sha256",
         "config_sha256",
@@ -43,9 +44,12 @@ def test_run_manifest_contains_required_provenance_fields(tmp_path):
         "command",
         "exit_status",
         "checkpoint_sha256",
+        "dependency_versions",
         "notes",
     ):
         assert field in data
     assert data["run_id"] == "test-run"
     assert data["config_sha256"] == sha256_file(config)
     assert data["dataset_manifest_sha256"] is None
+    assert data["git_dirty"] is None
+    assert {"numpy", "nibabel", "PyYAML"} <= data["dependency_versions"].keys()

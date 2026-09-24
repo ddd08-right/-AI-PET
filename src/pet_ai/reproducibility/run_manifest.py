@@ -9,6 +9,7 @@ import sys
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from pet_ai.reproducibility.hashing import sha256_or_not_available
@@ -21,6 +22,7 @@ class RunManifest:
     run_id: str
     timestamp: str
     git_commit: str | None
+    git_dirty: bool | None
     dataset_manifest_sha256: str | None
     split_manifest_sha256: str | None
     config_sha256: str | None
@@ -31,6 +33,7 @@ class RunManifest:
     command: list[str]
     exit_status: int | None
     checkpoint_sha256: str | None
+    dependency_versions: dict[str, str]
     notes: str | None
 
     def to_json_dict(self) -> dict[str, object]:
@@ -50,6 +53,30 @@ def current_git_commit(repo_root: Path) -> str | None:
         return None
     value = completed.stdout.strip()
     return value or None
+
+
+def current_git_dirty(repo_root: Path) -> bool | None:
+    try:
+        completed = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return bool(completed.stdout.strip())
+
+
+def dependency_versions() -> dict[str, str]:
+    versions: dict[str, str] = {}
+    for distribution in ("numpy", "nibabel", "PyYAML"):
+        try:
+            versions[distribution] = version(distribution)
+        except PackageNotFoundError:
+            versions[distribution] = NOT_AVAILABLE
+    return versions
 
 
 def detect_gpu_name() -> str | None:
@@ -84,6 +111,7 @@ def create_run_manifest(
         run_id=run_id or f"run-{uuid.uuid4().hex}",
         timestamp=datetime.now(timezone.utc).isoformat(),
         git_commit=current_git_commit(repo_root),
+        git_dirty=current_git_dirty(repo_root),
         dataset_manifest_sha256=sha256_or_not_available(dataset_manifest),
         split_manifest_sha256=sha256_or_not_available(split_manifest),
         config_sha256=sha256_or_not_available(config),
@@ -94,6 +122,7 @@ def create_run_manifest(
         command=command,
         exit_status=exit_status,
         checkpoint_sha256=sha256_or_not_available(checkpoint),
+        dependency_versions=dependency_versions(),
         notes=notes,
     )
 

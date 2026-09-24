@@ -76,20 +76,34 @@ def audit_examination(
         if not np.all(np.isfinite(data)):
             failures.append(f"{role} contains NaN or Inf")
 
-    ct_geometry = load_nifti_geometry(paths["CT"])
-    if len(ct_geometry.shape) != 3:
-        failures.append(f"CT must be 3D; observed shape={ct_geometry.shape}")
-    if len(ct_geometry.spacing) != 3:
-        failures.append(f"CT spacing must have three values; observed={ct_geometry.spacing}")
+    try:
+        ct_geometry = load_nifti_geometry(paths["CT"])
+    except ValueError as error:
+        ct_geometry = None
+        failures.append(f"CT geometry: {error}")
+    if ct_geometry is not None:
+        if len(ct_geometry.shape) != 3:
+            failures.append(f"CT must be 3D; observed shape={ct_geometry.shape}")
+        if len(ct_geometry.spacing) != 3:
+            failures.append(f"CT spacing must have three values; observed={ct_geometry.spacing}")
 
-    pet_geometry = compare_nifti_geometry(paths["CT"], paths["PET"], atol=geometry_atol)
-    failures.extend(f"PET geometry: {message}" for message in pet_geometry.messages)
-    reference_geometry = compare_nifti_geometry(
-        paths["CT"], paths["reference segmentation"], atol=geometry_atol
-    )
-    failures.extend(
-        f"reference segmentation geometry: {message}" for message in reference_geometry.messages
-    )
+    reference_geometry = None
+    if ct_geometry is not None:
+        try:
+            pet_geometry = compare_nifti_geometry(paths["CT"], paths["PET"], atol=geometry_atol)
+            failures.extend(f"PET geometry: {message}" for message in pet_geometry.messages)
+        except ValueError as error:
+            failures.append(f"PET geometry: {error}")
+        try:
+            reference_geometry = compare_nifti_geometry(
+                paths["CT"], paths["reference segmentation"], atol=geometry_atol
+            )
+            failures.extend(
+                f"reference segmentation geometry: {message}"
+                for message in reference_geometry.messages
+            )
+        except ValueError as error:
+            failures.append(f"reference segmentation geometry: {error}")
 
     label_result = validate_segmentation_labels(
         paths["reference segmentation"],
@@ -102,13 +116,17 @@ def audit_examination(
     spacing: tuple[float, ...] | None = None
     per_voxel_ml: float | None = None
     reference_volume: float | None = None
-    ct_geometry_valid_for_volume = len(ct_geometry.shape) == 3 and len(ct_geometry.spacing) == 3
-    if len(ct_geometry.spacing) == 3:
+    ct_geometry_valid_for_volume = (
+        ct_geometry is not None
+        and len(ct_geometry.shape) == 3
+        and len(ct_geometry.spacing) == 3
+    )
+    if ct_geometry is not None and len(ct_geometry.spacing) == 3:
         spacing = ct_geometry.spacing
     if ct_geometry_valid_for_volume:
         try:
             per_voxel_ml = voxel_volume_ml(spacing)
-            if label_result.ok and reference_geometry.ok:
+            if label_result.ok and reference_geometry is not None and reference_geometry.ok:
                 reference_volume = mask_volume_ml(
                     loaded["reference segmentation"][1], spacing
                 )
@@ -118,7 +136,7 @@ def audit_examination(
     return ExaminationAudit(
         ok=not failures,
         readable=True,
-        shape=ct_geometry.shape,
+        shape=ct_geometry.shape if ct_geometry is not None else tuple(loaded["CT"][1].shape),
         spacing_mm=spacing,
         voxel_volume_ml=per_voxel_ml,
         reference_foreground_voxels=label_result.nonzero_voxels,

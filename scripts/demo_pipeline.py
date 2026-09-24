@@ -20,6 +20,7 @@ from pet_ai.reproducibility.run_manifest import create_run_manifest, write_run_m
 def _save_nifti(path: Path, data: np.ndarray, affine: np.ndarray) -> None:
     image = nib.Nifti1Image(data, affine)
     image.header.set_zooms((2.0, 2.0, 2.0))
+    image.header.set_xyzt_units("mm")
     nib.save(image, str(path))
 
 

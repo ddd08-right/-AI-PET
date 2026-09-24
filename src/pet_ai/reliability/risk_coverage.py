@@ -46,32 +46,65 @@ def _validated_observations(
 
 
 def risk_coverage_curve(
-    errors: np.ndarray | list[float], risk_scores: np.ndarray | list[float]
+    errors: np.ndarray | list[float],
+    risk_scores: np.ndarray | list[float],
+    *,
+    tie_policy: str = "expected",
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return coverage and mean true error for lowest-risk covered cases.
 
-    Larger risk scores mean less reliable cases. Stable ascending sorting keeps
-    input order for tied scores. The grid is ``[1/n, 2/n, ..., 1]``; zero
+    Larger risk scores mean less reliable cases. Exact score ties use expected
+    risk over all within-tie permutations by default. ``stable`` is retained
+    only as an explicit legacy policy and depends on input order. The grid is
+    ``[1/n, 2/n, ..., 1]``; zero
     coverage is excluded because mean error for an empty covered set is
     undefined. NaN and infinite observations raise ValueError and none are
     silently excluded.
     """
     error_values, score_values = _validated_observations(errors, risk_scores)
+    if tie_policy not in {"expected", "stable"}:
+        raise ValueError("tie_policy must be 'expected' or 'stable'")
     order = np.argsort(score_values, kind="stable")
     sorted_errors = error_values[order]
     counts = np.arange(1, sorted_errors.size + 1, dtype=float)
     coverage = counts / sorted_errors.size
-    risk = np.cumsum(sorted_errors) / counts
+    if tie_policy == "stable":
+        return coverage, np.cumsum(sorted_errors) / counts
+
+    sorted_scores = score_values[order]
+    risk = np.empty(sorted_errors.size, dtype=float)
+    prior_count = 0
+    prior_sum = 0.0
+    while prior_count < sorted_errors.size:
+        group_end = prior_count + 1
+        while (
+            group_end < sorted_errors.size
+            and sorted_scores[group_end] == sorted_scores[prior_count]
+        ):
+            group_end += 1
+        group_sum = float(np.sum(sorted_errors[prior_count:group_end]))
+        group_size = group_end - prior_count
+        for retained_in_group in range(1, group_size + 1):
+            total_count = prior_count + retained_in_group
+            expected_sum = prior_sum + retained_in_group * group_sum / group_size
+            risk[total_count - 1] = expected_sum / total_count
+        prior_sum += group_sum
+        prior_count = group_end
     return coverage, risk
 
 
-def aurc(errors: np.ndarray | list[float], risk_scores: np.ndarray | list[float]) -> float:
+def aurc(
+    errors: np.ndarray | list[float],
+    risk_scores: np.ndarray | list[float],
+    *,
+    tie_policy: str = "expected",
+) -> float:
     """Return area under the risk--coverage curve; lower is better.
 
     Numerical integration uses a right-endpoint Riemann sum over the equally
     spaced coverage intervals of width ``1/n``. The zero-coverage point remains
     excluded because its risk is undefined.
     """
-    coverage, risk = risk_coverage_curve(errors, risk_scores)
+    coverage, risk = risk_coverage_curve(errors, risk_scores, tie_policy=tie_policy)
     interval_width = 1.0 / coverage.size
     return float(np.sum(risk) * interval_width)

@@ -57,6 +57,8 @@ def main() -> None:
     for case_index, (reference, predictions) in enumerate(synthetic_inputs(), start=1):
         reference_volume = mask_volume_ml(reference, SPACING_MM)
         predicted_volumes = [mask_volume_ml(mask, SPACING_MM) for mask in predictions]
+        # This is mean(member volumes), not majority-vote mask volume or the
+        # volume of a thresholded ensemble-mean probability map.
         predicted_volume = float(np.mean(predicted_volumes))
         error = absolute_error(predicted_volume, reference_volume)
         disagreement = segmentation_disagreement(predictions)
@@ -71,6 +73,25 @@ def main() -> None:
             f"disagreement={disagreement:.6f} volume_cv={volume_cv:.6f} "
             f"mean_predictive_entropy={entropy:.6f}"
         )
+
+    reference = cuboid((3, 3, 3), (8, 8, 8))
+    empty = np.zeros_like(reference)
+    common_miss = [empty.copy(), empty.copy(), empty.copy()]
+    print()
+    print("SYNTHETIC FAILURE: all members agree on empty while reference is non-empty")
+    print(
+        f"disagreement={segmentation_disagreement(common_miss):.6f} "
+        f"volume_cv={volume_coefficient_of_variation([0.0, 0.0, 0.0]):.6f} "
+        "interpretation=stable_but_wrong"
+    )
+    cancellation_reference = np.zeros((3, 3, 3), dtype=np.uint8)
+    cancellation_prediction = np.zeros_like(cancellation_reference)
+    cancellation_reference[0, 0, 0] = 1
+    cancellation_prediction[2, 2, 2] = 1
+    fp_voxels = int(np.count_nonzero(cancellation_prediction & ~cancellation_reference))
+    fn_voxels = int(np.count_nonzero(~cancellation_prediction & cancellation_reference))
+    print("SYNTHETIC FAILURE: equal FPV and FNV cancel in net volume error")
+    print(f"false_positive_voxels={fp_voxels} false_negative_voxels={fn_voxels} net_volume_error_voxels=0")
 
     error_array = np.asarray(errors)
     rng = np.random.default_rng(RANDOM_SEED)

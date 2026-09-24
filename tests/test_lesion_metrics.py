@@ -5,7 +5,11 @@ import math
 
 import numpy as np
 
-from pet_ai.evaluation.lesion_metrics import connected_component_labels, evaluate_lesions
+from pet_ai.evaluation.lesion_metrics import (
+    connected_component_labels,
+    evaluate_lesions,
+    match_lesions,
+)
 
 
 def test_one_gt_lesion_perfectly_detected() -> None:
@@ -114,3 +118,21 @@ def test_connectivity_changes_component_count() -> None:
 
     assert len(components_6) == 2
     assert len(components_26) == 1
+
+
+def test_greedy_matching_does_not_guarantee_maximum_cardinality() -> None:
+    gt_labels = np.zeros((1, 1, 25), dtype=np.int32)
+    pred_labels = np.zeros_like(gt_labels)
+    gt_labels[..., :17] = 1
+    gt_labels[..., 17:] = 2
+    pred_labels[..., :9] = 1
+    pred_labels[..., 9:17] = 2
+    pred_labels[..., 17:] = 1
+
+    matches, _ = match_lesions(gt_labels, pred_labels)
+
+    observed = [
+        (item.gt_component_id, item.prediction_component_id, item.overlap_voxels)
+        for item in matches
+    ]
+    assert observed == [(1, 1, 9)]

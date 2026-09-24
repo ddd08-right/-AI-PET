@@ -1,0 +1,116 @@
+{
+  "schema_version": "1.0",
+  "evidence_status": "DEVELOPMENT_EXPOSED",
+  "scope": {
+    "seed": 20260924,
+    "fold": 0,
+    "development_validation_cases": 5,
+    "independent_test": false,
+    "total_epochs": 40
+  },
+  "configuration": {
+    "inputs": ["CT", "PET"],
+    "configuration": "3d_fullres",
+    "patch_size": [160, 112, 96],
+    "batch_size": 2,
+    "sampling": "verified midpoint loader: slot 0 negative/random; slot 1 positive; force-foreground probability 0.82",
+    "data_loader_processes": 0,
+    "cudnn_deterministic": true,
+    "cudnn_benchmark": false,
+    "learning_rate_schedule": "nnU-Net PolyLR with a 40-epoch horizon",
+    "loss": "upstream nnU-Net loss inherited by the trainer",
+    "checkpoint_selection": "upstream online validation EMA foreground pseudo Dice"
+  },
+  "checkpoints": {
+    "final": {
+      "current_epoch": 40,
+      "completed_epoch_indices": "0-39",
+      "logging_epoch_count": 40,
+      "sha256": "78f52b1851bbe0f9473fc567ea1a034cacc70afb28bc6b1836717bd8d30d5bfd"
+    },
+    "ema_selected": {
+      "current_epoch": 36,
+      "completed_epoch_indices": "0-35",
+      "logging_epoch_count": 36,
+      "sha256": "462df60be2a04e218a160a4c9f8ec1ff834642bf433375a183bc0f9d9cc3b8bb",
+      "best_definition": "best only by online EMA pseudo Dice, not by every evaluation objective"
+    }
+  },
+  "metric_policies": {
+    "strict": "Dice, recall, and relative volume error are undefined for empty references; Dice/recall aggregate three non-empty-reference cases; volume metrics retain all five cases.",
+    "nnunet": "Foreground class 1 over five cases; empty-reference/non-empty-prediction Dice is 0; only both-empty Dice is NaN and excluded by nanmean.",
+    "units": "mL for FPV, FNV, volumes, and absolute volume error"
+  },
+  "aggregates": {
+    "final": {
+      "strict_dice": {"mean": 0.0990737955022662, "applicable_cases": 3, "total_cases": 5},
+      "FPV_mL": {"mean": 48.0671270171131, "applicable_cases": 5, "total_cases": 5},
+      "FNV_mL": {"mean": 29.953001088725934, "applicable_cases": 5, "total_cases": 5},
+      "absolute_volume_error_mL": {"mean": 59.43324339635385, "applicable_cases": 5, "total_cases": 5},
+      "precision": {"mean": 0.1036035798027041, "applicable_cases": 5, "total_cases": 5},
+      "recall": {"mean": 0.32563257155088693, "applicable_cases": 3, "total_cases": 5},
+      "nnunet_five_case_dice": {"mean": 0.05944427730135972, "applicable_cases": 5, "total_cases": 5}
+    },
+    "ema_selected": {
+      "strict_dice": {"mean": 0.21873356253933532, "applicable_cases": 3, "total_cases": 5},
+      "FPV_mL": {"mean": 65.64380085751517, "applicable_cases": 5, "total_cases": 5},
+      "FNV_mL": {"mean": 23.876806649560894, "applicable_cases": 5, "total_cases": 5},
+      "absolute_volume_error_mL": {"mean": 63.21033723691589, "applicable_cases": 5, "total_cases": 5},
+      "precision": {"mean": 0.15370141560633158, "applicable_cases": 5, "total_cases": 5},
+      "recall": {"mean": 0.45684196803589244, "applicable_cases": 3, "total_cases": 5}
+    },
+    "ANALYTIC_EMPTY_PREDICTION_CONTROL": {
+      "description": "analytic calculation, not a model and not an inference output",
+      "strict_dice": {"mean": 0.0, "applicable_cases": 3, "total_cases": 5},
+      "FPV_mL": {"mean": 0.0, "applicable_cases": 5, "total_cases": 5},
+      "FNV_mL": {"mean": 33.304612026299765, "applicable_cases": 5, "total_cases": 5},
+      "absolute_volume_error_mL": {"mean": 33.304612026299765, "applicable_cases": 5, "total_cases": 5},
+      "precision": {"mean": null, "applicable_cases": 0, "total_cases": 5},
+      "recall": {"mean": 0.0, "applicable_cases": 3, "total_cases": 5}
+    }
+  },
+  "recovery": {
+    "resume_current_epoch": 22,
+    "rng_history": "NOT_SAVED",
+    "first_interruption_reason": "UNKNOWN",
+    "first_interruption_exit_code": "UNKNOWN"
+  },
+  "run_segments": {
+    "manual_recovery_wrapper": {
+      "elapsed_seconds": 7345.4399993,
+      "exit_code": 0,
+      "scope": "epoch-22 resume through training completion and automatic final validation; not the cumulative 40-epoch GPU training time"
+    },
+    "inner_continue_wrapper": {
+      "elapsed_seconds": "UNKNOWN",
+      "exit_code": 0
+    },
+    "ema_selected_five_case_evaluation": {
+      "elapsed_seconds": 1215.9125001430511,
+      "exit_code": 0
+    }
+  },
+  "source_digests": {
+    "final_metrics_post40.json": "820c448603f5943a6340cdd60c760035e6bc7f8424bfb8e7498834c6d91155d7",
+    "best_metrics_epoch36_post40.json": "9129654dbd37281a58914aff5108337c7ca847e48649c80b30e55a183dc74ffc",
+    "nnunet_summary.json": "e90b5ec7cb64e1830566d7017726153f96c93ee4f866a2bf6c796ea9c7cb59d3",
+    "continue_wrapper_result.json": "77fd4d7d8b1576f8a329efc8378e9e63470cc6526ec61796e6682c86c45fa114",
+    "manual_wrapper_result.json": "4a09c5211d45364cdf0351d66a33ed8410725aea1c775c43323262d4fd2da919",
+    "ema_selected_evaluation_result.json": "6dd6a74511302eabfb6795d46fc181f85459e10f4bdcac65ed1a130e4aa81964"
+  },
+  "preserved_source_conflict": {
+    "field": "baseline_config.status",
+    "value": "PREPARATION_ONLY_NOT_RUN",
+    "assessment": "stale preparation-time field; not used as completion evidence"
+  },
+  "public_exclusions": [
+    "patient images",
+    "dataset case mappings",
+    "per-case result rows",
+    "private absolute paths",
+    "model weights",
+    "credentials",
+    "sensitive logs",
+    "private HTML payload"
+  ]
+}

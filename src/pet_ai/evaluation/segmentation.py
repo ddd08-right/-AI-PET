@@ -9,6 +9,8 @@ from typing import Any
 import nibabel as nib
 import numpy as np
 
+from pet_ai.qc.geometry import compare_nifti_geometry, load_nifti_geometry
+
 
 @dataclass(frozen=True)
 class SegmentationCounts:
@@ -38,11 +40,13 @@ class SegmentationMetrics:
 
 
 def voxel_counts(prediction: np.ndarray, ground_truth: np.ndarray) -> SegmentationCounts:
+    prediction = _validated_binary_array(prediction, name="prediction")
+    ground_truth = _validated_binary_array(ground_truth, name="ground_truth")
     if prediction.shape != ground_truth.shape:
         raise ValueError(f"prediction and ground_truth shapes differ: {prediction.shape} != {ground_truth.shape}")
 
-    pred = prediction.astype(bool)
-    gt = ground_truth.astype(bool)
+    pred = prediction.astype(bool, copy=False)
+    gt = ground_truth.astype(bool, copy=False)
     tp = int(np.count_nonzero(pred & gt))
     fp = int(np.count_nonzero(pred & ~gt))
     fn = int(np.count_nonzero(~pred & gt))
@@ -53,6 +57,17 @@ def voxel_counts(prediction: np.ndarray, ground_truth: np.ndarray) -> Segmentati
         gt_positive_voxels=int(np.count_nonzero(gt)),
         prediction_positive_voxels=int(np.count_nonzero(pred)),
     )
+
+
+def _validated_binary_array(array: np.ndarray, *, name: str) -> np.ndarray:
+    value = np.asarray(array)
+    if value.ndim != 3:
+        raise ValueError(f"{name} must be a 3D array; observed shape={value.shape}")
+    if not np.all(np.isfinite(value)):
+        raise ValueError(f"{name} must contain only finite values")
+    if not np.all((value == 0) | (value == 1)):
+        raise ValueError(f"{name} must be boolean or contain only binary values 0 and 1")
+    return value
 
 
 def dice_from_counts(counts: SegmentationCounts) -> float:
@@ -70,8 +85,8 @@ def evaluate_binary_segmentation(
     *,
     voxel_volume_mm3: float,
 ) -> SegmentationMetrics:
-    if voxel_volume_mm3 <= 0:
-        raise ValueError("voxel_volume_mm3 must be positive")
+    if not np.isfinite(voxel_volume_mm3) or voxel_volume_mm3 <= 0:
+        raise ValueError("voxel_volume_mm3 must be finite and positive")
     counts = voxel_counts(prediction, ground_truth)
     return SegmentationMetrics(
         counts=counts,
@@ -83,10 +98,13 @@ def evaluate_binary_segmentation(
 
 
 def evaluate_nifti_segmentation(prediction_path: Path, ground_truth_path: Path) -> SegmentationMetrics:
+    geometry = compare_nifti_geometry(ground_truth_path, prediction_path)
+    if not geometry.ok:
+        raise ValueError("prediction and ground_truth physical grids differ: " + "; ".join(geometry.messages))
     prediction_image = nib.load(str(prediction_path))
     ground_truth_image = nib.load(str(ground_truth_path))
     prediction = np.asanyarray(prediction_image.dataobj)
     ground_truth = np.asanyarray(ground_truth_image.dataobj)
-    zooms = ground_truth_image.header.get_zooms()[:3]
-    voxel_volume_mm3 = float(np.prod(zooms))
+    validated = load_nifti_geometry(ground_truth_path)
+    voxel_volume_mm3 = abs(float(np.linalg.det(np.asarray(validated.affine)[:3, :3])))
     return evaluate_binary_segmentation(prediction, ground_truth, voxel_volume_mm3=voxel_volume_mm3)

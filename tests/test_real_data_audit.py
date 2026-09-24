@@ -10,7 +10,9 @@ from pet_ai.real_data.audit import audit_examination
 
 
 def _write(path: Path, data: np.ndarray, affine: np.ndarray) -> Path:
-    nib.save(nib.Nifti1Image(data, affine), path)
+    image = nib.Nifti1Image(data, affine)
+    image.header.set_xyzt_units("mm")
+    nib.save(image, path)
     return path
 
 
@@ -117,6 +119,25 @@ def test_empty_binary_reference_is_valid(tmp_path: Path) -> None:
     assert result.reference_empty is True
     assert result.reference_foreground_voxels == 0
     assert result.reference_volume_ml == 0.0
+
+
+def test_unknown_spatial_unit_blocks_verified_volume(tmp_path: Path) -> None:
+    ct_path, pet_path, seg_path = _triplet(tmp_path)
+    for path in (ct_path, pet_path, seg_path):
+        image = nib.load(path)
+        image.header.set_xyzt_units("unknown")
+        nib.save(image, path)
+
+    result = audit_examination(ct_path, pet_path, seg_path)
+
+    assert not result.ok
+    assert result.readable
+    assert result.reference_foreground_voxels == 0
+    assert result.reference_empty is True
+    assert result.reference_labels == [0]
+    assert result.voxel_volume_ml is None
+    assert result.reference_volume_ml is None
+    assert any("spatial unit" in reason for reason in result.failure_reasons)
 
 
 def test_missing_file_is_not_readable(tmp_path: Path) -> None:

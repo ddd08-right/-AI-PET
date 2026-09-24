@@ -4,6 +4,7 @@
     "run_id",
     "timestamp",
     "git_commit",
+    "git_dirty",
     "dataset_manifest_sha256",
     "split_manifest_sha256",
     "config_sha256",
@@ -14,12 +15,14 @@
     "command",
     "exit_status",
     "checkpoint_sha256",
+    "dependency_versions",
     "notes"
   ],
   "properties": {
     "run_id": {"type": "string"},
     "timestamp": {"type": "string"},
     "git_commit": {"type": ["string", "null"]},
+    "git_dirty": {"type": ["boolean", "null"]},
     "dataset_manifest_sha256": {"type": ["string", "null"]},
     "split_manifest_sha256": {"type": ["string", "null"]},
     "config_sha256": {"type": ["string", "null"]},
@@ -30,6 +33,10 @@
     "command": {"type": "array", "items": {"type": "string"}},
     "exit_status": {"type": ["integer", "null"]},
     "checkpoint_sha256": {"type": ["string", "null"]},
+    "dependency_versions": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
     "notes": {"type": ["string", "null"]}
   }
 }

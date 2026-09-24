@@ -57,6 +57,7 @@ This repository is intentionally modest: it demonstrates public-safe software en
 | Physical mask and generic uptake quantification | ENGINEERING_SMOKE | NumPy invariant tests and synthetic methodology demo. |
 | Patient-level reliability and risk--coverage | ENGINEERING_SMOKE | Deterministic NumPy tests, controls, and synthetic methodology demo. |
 | nnU-Net orchestration wrappers | DEVELOPMENT_EXPOSED | Parameterized wrappers; not run by CI. |
+| 40-epoch development baseline | DEVELOPMENT_EXPOSED | Single seed, fold 0, five development-validation cases; final and online-EMA-selected checkpoints evaluated. Not an independent test. |
 | WinError 1455 and low-VRAM notes | HISTORICAL_PROJECT_RECORD | Historical local records only; not rerun here. |
 | Clinical validation | PLANNED | No clinical validation is claimed. |
 
@@ -114,10 +115,15 @@ Development-exposed data must not be described as an independent test set.
 `pet_ai.qc.geometry` compares NIfTI shape, voxel spacing, orientation, and affine. `pet_ai.qc.labels` checks binary segmentation labels, NaN/Inf values, optional non-empty masks, and optional geometry alignment to a reference image.
 
 The QC modules report problems. They do not silently resample, repair, or exclude cases.
+NIfTI geometry requires an explicit recognized spatial unit and is normalized
+to millimetres for comparison. Same-grid status allows index-wise comparison;
+it does not prove anatomical registration.
 
 ## 8. Voxel-level segmentation evaluation
 
 `pet_ai.evaluation.segmentation` reports TP, FP, FN, Dice, FPV_mL, and FNV_mL. For empty ground truth, Dice is undefined (`NaN`) rather than forced to 1. Negative cases should be reviewed using false-positive volume.
+Inputs must be finite, strictly binary, same-shaped 3D arrays. The NIfTI entry
+point additionally rejects physical-grid mismatch before computing metrics.
 
 ## 9. Lesion-level evaluation
 
@@ -135,13 +141,37 @@ The QC modules report problems. They do not silently resample, repair, or exclud
 
 `scripts/train_nnunet.ps1` and `scripts/infer_nnunet.ps1` are wrappers around upstream nnU-Net commands. They require explicit parameters and environment variables. CI does not train, infer, download weights, or require a GPU.
 
+The completed 40-epoch, single-seed, fold-0 development case is documented in
+[`docs/DEVELOPMENT_BASELINE_40E_CASE.md`](docs/DEVELOPMENT_BASELINE_40E_CASE.md),
+with its public-safe aggregate record in
+[`docs/development_baseline_40e_summary.json`](docs/development_baseline_40e_summary.json).
+It includes real predictions and evaluation for the final checkpoint and the
+checkpoint selected by the online EMA pseudo-Dice rule across five development
+validation cases. The protected predictions and per-case evidence are not
+published in this repository.
+
 ## 13. Research extensions - PLANNED ONLY
 
 The following remain PLANNED unless future evidence is added: multi-center OOD, multi-tracer OOD, FDG -> PSMA transfer, validated SUV error, and study-defined tumor-volume biomarkers. The v0.3 reliability utilities are synthetic engineering evidence, not clinical evidence.
 
 ## 14. Evidence boundaries
 
-Public tests and demos use synthetic data only. This repository does not contain patient images, PHI, raw clinical spreadsheets, DICOM metadata dumps, model weights, checkpoints, private logs, or secrets. Engineering smoke tests are not clinical validation.
+Public executable tests and demos use synthetic data only. The public code and
+synthetic examples can be run without protected data, but the private real-case
+metrics cannot be independently recomputed from the public aggregates alone.
+This repository does not contain patient images, PHI, patient mappings,
+per-case real-data results, raw clinical spreadsheets, DICOM metadata dumps,
+model weights, checkpoints, protected predictions, private logs, or secrets.
+
+One traceable real-data development case is complete: a 40-epoch, single-seed,
+fold-0 run with five development validation cases, including final and
+online-EMA-selected-checkpoint predictions and evaluation. The public repository
+contains only the de-identified aggregate results, method and provenance
+summary, and limitations. Recorded source hashes support artifact identity and
+traceability; they are not independent scientific validation. Complete OOF
+coverage, an independent test set, external validation, and a reliability study
+remain incomplete. Neither clinical effectiveness nor completion of the wider
+research programme is claimed.
 
 ## 15. Third-party attribution
 

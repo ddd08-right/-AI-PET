@@ -36,17 +36,42 @@ def test_best_case_reference_ranking_beats_reverse_ranking():
     assert aurc(errors, errors) < aurc(errors, -errors)
 
 
-def test_stable_ties_preserve_input_order_and_repeat_deterministically():
-    errors = np.array([0.4, 0.1, 0.8, 0.2])
-    tied_scores = np.ones(4)
+def test_expected_ties_are_input_order_invariant():
+    errors = np.array([0.0, 0.0, 100.0])
+    tied_scores = np.zeros(3)
 
     first_coverage, first_risk = risk_coverage_curve(errors, tied_scores)
-    second_coverage, second_risk = risk_coverage_curve(errors, tied_scores)
+    second_coverage, second_risk = risk_coverage_curve(errors[::-1], tied_scores)
 
-    assert first_risk[0] == errors[0]
     np.testing.assert_array_equal(first_coverage, second_coverage)
     np.testing.assert_array_equal(first_risk, second_risk)
-    assert aurc(errors, tied_scores) == aurc(errors, tied_scores)
+    assert aurc(errors, tied_scores) == pytest.approx(100 / 3)
+
+
+def test_expected_tie_formula_matches_all_permutations():
+    import itertools
+
+    errors = np.array([2.0, 5.0, 11.0])
+    permutation_risks = []
+    for permutation in itertools.permutations(errors):
+        values = np.asarray(permutation)
+        permutation_risks.append(np.cumsum(values) / np.arange(1, 4))
+    enumerated_expectation = np.mean(permutation_risks, axis=0)
+
+    _, analytic_risk = risk_coverage_curve(errors, np.ones(3))
+    np.testing.assert_allclose(analytic_risk, enumerated_expectation)
+
+
+def test_legacy_stable_ties_require_explicit_option():
+    errors = np.array([0.4, 0.1, 0.8, 0.2])
+    _, risk = risk_coverage_curve(errors, np.ones(4), tie_policy="stable")
+    assert risk[0] == errors[0]
+
+
+def test_single_case_and_random_expectation_boundaries():
+    assert aurc([7.0], [0.0]) == 7.0
+    errors = np.array([1.0, 4.0, 9.0])
+    assert aurc(errors, np.zeros(3)) == pytest.approx(np.mean(errors))
 
 
 def test_mismatched_lengths_fail_clearly():

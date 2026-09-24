@@ -23,6 +23,8 @@ from typing import Any
 
 import numpy as np
 
+from pet_ai.evaluation.segmentation import _validated_binary_array
+
 
 @dataclass(frozen=True)
 class LesionComponent:
@@ -125,9 +127,7 @@ def connected_component_labels(
 ) -> tuple[np.ndarray, list[LesionComponent]]:
     """Label connected foreground components in a 3D binary mask."""
 
-    if mask.ndim != 3:
-        raise ValueError(f"lesion metrics require 3D arrays, got shape {mask.shape}")
-    foreground = mask.astype(bool)
+    foreground = _validated_binary_array(mask, name="mask").astype(bool, copy=False)
     labels = np.zeros(foreground.shape, dtype=np.int32)
     components: list[LesionComponent] = []
     offsets = neighbor_offsets(connectivity)
@@ -236,10 +236,10 @@ def evaluate_lesions(
         raise ValueError(
             f"prediction and ground_truth shapes differ: {prediction.shape} != {ground_truth.shape}"
         )
-    if voxel_volume_mm3 <= 0:
-        raise ValueError("voxel_volume_mm3 must be positive")
-    if small_lesion_threshold_ml < 0:
-        raise ValueError("small_lesion_threshold_ml must be non-negative")
+    if not np.isfinite(voxel_volume_mm3) or voxel_volume_mm3 <= 0:
+        raise ValueError("voxel_volume_mm3 must be finite and positive")
+    if not np.isfinite(small_lesion_threshold_ml) or small_lesion_threshold_ml < 0:
+        raise ValueError("small_lesion_threshold_ml must be finite and non-negative")
 
     voxel_volume_ml = voxel_volume_mm3 / 1000.0
     gt_labels, gt_components_raw = connected_component_labels(ground_truth, connectivity=connectivity)
